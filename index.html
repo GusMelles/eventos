@@ -1,0 +1,1359 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BuscaIA Eventos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            overscroll-behavior-y: contain; 
+        }
+        .apple-header {
+            background-color: #f8f8f8;
+            border-bottom: 1px solid #d1d1d6;
+        }
+        .apple-card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        .apple-card:hover:not(.non-interactive):not(.no-hover-effect) {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+        }
+        .apple-button {
+            background-color: #007aff;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+            text-align: center;
+            cursor: pointer;
+        }
+        .apple-button:hover {
+            background-color: #005ecb;
+        }
+        .apple-button.danger {
+            background-color: #ff3b30;
+        }
+        .apple-button.danger:hover {
+            background-color: #d92c23;
+        }
+        .apple-secondary-button {
+            background-color: #e5e5ea;
+            color: #007aff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+            text-align: center;
+            cursor: pointer;
+        }
+        .apple-secondary-button:hover {
+            background-color: #dcdce0;
+        }
+        .page { display: none; }
+        .page.active { display: block; }
+        .bottom-nav {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background-color: #f8f8f8; border-top: 1px solid #d1d1d6;
+            display: flex; justify-content: space-around; padding: 10px 0; z-index: 1000;
+        }
+        .bottom-nav-item {
+            display: flex; flex-direction: column; align-items: center;
+            color: #8e8e93; cursor: pointer; font-size: 0.75rem; flex: 1; padding: 4px 0;
+        }
+        .bottom-nav-item svg { width: 24px; height: 24px; margin-bottom: 2px; }
+        .bottom-nav-item.active { color: #007aff; }
+        .content-wrapper { padding-bottom: 80px; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        .image-placeholder {
+            display: flex; align-items: center; justify-content: center;
+            background-color: #e5e7eb; color: #9ca3af; border-radius: 8px;
+            text-align: center;
+        }
+        .feed-item { background-color: #f9f9f9; border: 1px solid #e5e5ea; }
+        .feed-item img.user-avatar, .network-item img.user-avatar, .speaker-item img.user-avatar, #speakerModalAvatar, #networkUserModalAvatar, #chatModalUserAvatar, #editProfileAvatarPreview, .sponsor-logo, #scheduleItemModalSpeakerAvatar {
+            width: 40px; height: 40px; border-radius: 50%; margin-right: 12px; object-fit: cover; background-color: #ccc;
+        }
+        .sponsor-logo { width: 60px; height: 60px; border-radius:8px; }
+        #speakerModalAvatar, #networkUserModalAvatar { width: 80px; height: 80px; margin-bottom:1rem;}
+        #editProfileAvatarPreview { width: 100px; height: 100px; margin-bottom: 1rem; margin-right:0; }
+
+        .feed-item img.feed-image-placeholder {
+            width: 100%; max-height: 300px; object-fit: cover; border-radius: 8px; background-color: #e0e0e0; margin-top: 0.5rem;
+        }
+        .event-detail-tabs { display: flex; border-bottom: 1px solid #d1d1d6; margin-bottom: 1.5rem; overflow-x: auto; white-space: nowrap;}
+        .event-tab-button {
+            padding: 0.75rem 1rem; cursor: pointer; font-weight: 500;
+            color: #8e8e93; border-bottom: 2px solid transparent; margin-bottom: -1px; flex-shrink: 0;
+        }
+        .event-tab-button.active { color: #007aff; border-bottom-color: #007aff; }
+        .event-tab-content { display: none; }
+        .event-tab-content.active { display: block; animation: fadeIn 0.3s ease-out; }
+
+        .modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center;
+            z-index: 2000; padding: 1rem;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background-color: #ffffff; padding: 1.5rem; border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2); width: 100%; max-width: 500px;
+            max-height: 90vh; overflow-y: auto; position: relative;
+        }
+        .modal-close-button {
+            position: absolute; top: 10px; right: 15px; background: none; border: none;
+            font-size: 1.8rem; color: #aaa; cursor: pointer; line-height: 1;
+        }
+        #chatMessages { height: 200px; overflow-y: auto; border: 1px solid #e5e5ea; padding: 0.5rem; border-radius: 8px; margin-bottom: 1rem; }
+        .chat-message { padding: 0.5rem; margin-bottom: 0.5rem; border-radius: 8px; max-width: 80%; }
+        .chat-message.sent { background-color: #007aff; color: white; margin-left: auto; }
+        .chat-message.received { background-color: #e5e5ea; color: black; margin-right: auto; }
+        
+        .new-message-indicator {
+            width: 10px;
+            height: 10px;
+            background-color: #007aff;
+            border-radius: 50%;
+            display: inline-block;
+            margin-left: 8px;
+        }
+        .form-label {
+            display: block;
+            font-weight: 500;
+            color: #374151; 
+            margin-bottom: 0.25rem;
+        }
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db; 
+            border-radius: 8px;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #007aff;
+            box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.2);
+        }
+        #notificationsInfoText {
+            color: #4b5563; 
+            font-size: 0.875rem; 
+            text-align: center;
+            padding: 1rem; 
+            background-color: #eff6ff; 
+            border: 1px solid #bfdbfe; 
+            border-radius: 0.5rem; 
+            margin-bottom: 1rem; 
+        }
+        /* Splash Screen */
+        #splashScreen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: #007aff; color: white;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; transition: opacity 0.5s ease-out;
+        }
+        #splashScreen h1 { font-size: 2.5rem; font-weight: 700; margin-bottom: 0.5rem; }
+        #splashScreen p { font-size: 1rem; }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-left-color: #fff;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin-top: 1.5rem;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div id="splashScreen">
+        <h1>BuscaIA Eventos</h1>
+        <p>Carregando experiências...</p>
+        <div class="spinner"></div>
+    </div>
+
+    <header class="apple-header sticky top-0 z-50" style="display:none;">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 id="pageTitle" class="text-xl font-semibold text-gray-800">BuscaIA Eventos</h1>
+        </div>
+    </header>
+
+    <main class="content-wrapper container mx-auto px-4 py-6" style="display:none;">
+        <div id="eventListPage" class="page active fade-in">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-1 text-center">Encontre Novos Eventos</h2>
+            <p class="text-sm text-gray-500 mb-6 text-center">Explore conferências, workshops e imersões sobre IA e tecnologia.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="eventGrid"></div>
+        </div>
+
+        <div id="eventDetailPage" class="page fade-in">
+            <button id="backButton" class="apple-secondary-button mb-6 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
+                Voltar
+            </button>
+            <div id="eventDetailCard" class="apple-card p-6 non-interactive no-hover-effect">
+                <h2 id="detailEventTitle" class="text-3xl font-bold text-gray-900 mb-4"></h2>
+                <div class="event-detail-tabs" id="eventDetailTabsContainer">
+                    <button class="event-tab-button active" data-tab="eventAboutContent">Sobre</button>
+                    <button class="event-tab-button" data-tab="eventScheduleContent">Programação</button>
+                    <button class="event-tab-button" data-tab="eventSpeakersContent">Palestrantes</button>
+                    <button class="event-tab-button" data-tab="eventFeedContentSection">Feed</button>
+                    <button class="event-tab-button" data-tab="eventSponsorsContent">Patrocinadores</button>
+                </div>
+
+                <div id="eventAboutContent" class="event-tab-content active">
+                    <img id="detailEventImage" src="" alt="Imagem do Evento" class="w-full h-64 object-cover rounded-lg mb-4" onerror="this.style.display='none'; this.parentElement.querySelector('.image-placeholder-main').style.display='flex';">
+                    <div class="image-placeholder-main image-placeholder w-full h-64 rounded-lg mb-4 text-sm p-2" style="display: none;">[Imagem da capa do evento indisponível]</div>
+                    <p id="detailEventDate" class="text-gray-600 text-sm mb-1"></p>
+                    <p id="detailEventLocation" class="text-gray-600 text-sm mb-4"></p>
+                    <p id="detailEventDescription" class="text-gray-700 leading-relaxed mb-6"></p>
+                </div>
+                <div id="eventScheduleContent" class="event-tab-content">
+                    <div id="detailEventSchedule" class="space-y-3"></div>
+                </div>
+                <div id="eventSpeakersContent" class="event-tab-content">
+                    <div id="detailEventSpeakers" class="space-y-3"></div>
+                </div>
+                <div id="eventFeedContentSection" class="event-tab-content">
+                    <div class="apple-card p-4 mb-4 non-interactive no-hover-effect">
+                        <textarea id="feedNewMessageText" class="w-full p-2 border border-gray-300 rounded-md mb-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent" rows="3" placeholder="Compartilhe algo sobre o evento..."></textarea>
+                        <div class="flex justify-between items-center">
+                            <button id="feedAttachPhotoButton" class="apple-secondary-button text-sm py-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 inline mr-1"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" /></svg>Foto</button>
+                            <button id="feedPostButton" class="apple-button text-sm py-2">Postar</button>
+                        </div>
+                    </div>
+                    <div id="eventFeedContentContainer" class="space-y-4"></div>
+                </div>
+                <div id="eventSponsorsContent" class="event-tab-content">
+                    <div id="detailEventSponsors" class="space-y-6"></div>
+                </div>
+            </div>
+        </div>
+
+        <div id="networkingPage" class="page fade-in">
+            <div class="apple-card p-6 non-interactive no-hover-effect">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Minhas Conexões</h2>
+                <input type="text" id="networkSearchInput" placeholder="Buscar conexões por nome ou empresa..." class="w-full p-3 border border-gray-300 rounded-lg mb-6 focus:ring-2 focus:ring-blue-500 focus:border-transparent" aria-label="Buscar conexões">
+                <div id="globalNetworkingList" class="space-y-4"></div>
+            </div>
+        </div>
+        
+        <div id="profilePage" class="page fade-in">
+             <div class="apple-card p-6 non-interactive no-hover-effect">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Meu Perfil</h2>
+                <div class="flex flex-col items-center mb-6">
+                    <img id="viewProfileAvatar" src="https://placehold.co/100x100/007AFF/FFFFFF?text=G" alt="Foto do Perfil" class="w-24 h-24 rounded-full mb-4 object-cover bg-gray-300">
+                    <h3 id="viewProfileName" class="text-xl font-medium text-gray-900">Gustavo</h3>
+                    <p id="viewProfileEmail" class="text-gray-600">gustavo@example.com</p>
+                    <p id="viewProfileBio" class="text-gray-600 text-sm mt-2 text-center">Minha bio aparecerá aqui.</p>
+                </div>
+                 <div class="mb-4">
+                    <h4 class="font-semibold text-gray-700">Profissional:</h4>
+                    <p id="viewProfileJob" class="text-gray-600">Cargo em Empresa</p>
+                 </div>
+                 <div class="mb-6">
+                    <h4 class="font-semibold text-gray-700">Redes Sociais:</h4>
+                    <p><a id="viewProfileLinkedin" href="#" target="_blank" class="text-blue-600 hover:underline">LinkedIn</a></p>
+                    <p><a id="viewProfileInstagram" href="#" target="_blank" class="text-pink-600 hover:underline">Instagram</a></p>
+                    <p><a id="viewProfileX" href="#" target="_blank" class="text-sky-500 hover:underline">X (Twitter)</a></p>
+                    <p><a id="viewProfileWhatsapp" href="#" target="_blank" class="text-green-600 hover:underline">WhatsApp</a></p>
+                 </div>
+
+                <button id="goToEditProfileButton" class="apple-button w-full">Editar Perfil</button>
+            </div>
+        </div>
+
+        <div id="editProfilePage" class="page fade-in">
+            <div class="apple-card p-6 non-interactive no-hover-effect">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-6">Editar Perfil</h2>
+                
+                <div class="flex flex-col items-center mb-6">
+                    <img id="editProfileAvatarPreview" src="https://placehold.co/100x100/007AFF/FFFFFF?text=G" alt="Prévia do Avatar" class="bg-gray-300">
+                    <input type="file" id="editProfileAvatarInput" class="hidden" accept="image/*">
+                    <button onclick="document.getElementById('editProfileAvatarInput').click()" class="apple-secondary-button text-sm mt-2">Alterar Foto</button>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label for="editProfileNameInput" class="form-label">Nome Completo</label>
+                        <input type="text" id="editProfileNameInput" class="form-input" value="Gustavo">
+                    </div>
+                    <div>
+                        <label for="editProfileBioTextarea" class="form-label">Bio Curta</label>
+                        <textarea id="editProfileBioTextarea" class="form-input" rows="3" placeholder="Fale um pouco sobre você..."></textarea>
+                    </div>
+                    <div>
+                        <label for="editProfileJobInput" class="form-label">Cargo Atual</label>
+                        <input type="text" id="editProfileJobInput" class="form-input" placeholder="Ex: Desenvolvedor Full Stack">
+                    </div>
+                    <div>
+                        <label for="editProfileCompanyInput" class="form-label">Empresa</label>
+                        <input type="text" id="editProfileCompanyInput" class="form-input" placeholder="Ex: BuscaIA Corp">
+                    </div>
+                     <div>
+                        <label for="editProfileAreaInput" class="form-label">Área de Atuação</label>
+                        <input type="text" id="editProfileAreaInput" class="form-input" placeholder="Ex: Tecnologia, Marketing, Design">
+                    </div>
+                    <div>
+                        <label for="editProfileLinkedinInput" class="form-label">LinkedIn</label>
+                        <input type="url" id="editProfileLinkedinInput" class="form-input" placeholder="https://linkedin.com/in/seu-usuario">
+                    </div>
+                    <div>
+                        <label for="editProfileInstagramInput" class="form-label">Instagram</label>
+                        <input type="url" id="editProfileInstagramInput" class="form-input" placeholder="https://instagram.com/seu-usuario">
+                    </div>
+                    <div>
+                        <label for="editProfileXInput" class="form-label">X (Twitter)</label>
+                        <input type="url" id="editProfileXInput" class="form-input" placeholder="https://x.com/seu-usuario">
+                    </div>
+                    <div>
+                        <label for="editProfileWhatsappInput" class="form-label">WhatsApp (link wa.me)</label>
+                        <input type="tel" id="editProfileWhatsappInput" class="form-input" placeholder="https://wa.me/55DDDSEUNUMERO">
+                    </div>
+                </div>
+
+                <div class="mt-8 flex space-x-3">
+                    <button id="saveProfileButton" class="apple-button flex-1">Salvar Alterações</button>
+                    <button id="cancelEditProfileButton" class="apple-secondary-button flex-1">Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="notificationsPage" class="page fade-in">
+            <div class="apple-card p-6 non-interactive no-hover-effect">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Notificações</h2>
+                <p id="notificationsInfoText">
+                    Aqui você verá suas notificações sobre mensagens recebidas do networking, lembretes de palestras que você marcou, menções em feeds de eventos e mensagens importantes dos organizadores. <br>Fique de olho para não perder nada!
+                </p>
+                <div id="notificationsList" class="space-y-4 mt-4">
+                    </div>
+            </div>
+        </div>
+    </main>
+
+    <nav class="bottom-nav" style="display:none;">
+         <div class="bottom-nav-item active" data-page="eventListPage" data-title="BuscaIA Eventos">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5M12 12h.008v.008H12V12zm0 2.25h.008v.008H12v-.008zm0 2.25h.008v.008H12V17.25zm-2.25-4.5h.008v.008H9.75v-.008zm0 2.25h.008v.008H9.75v-.008zm0 2.25h.008v.008H9.75V17.25zm-2.25-4.5h.008v.008H7.5v-.008zm0 2.25h.008v.008H7.5v-.008zm0 2.25h.008v.008H7.5V17.25zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z" /></svg>Eventos
+        </div>
+        <div class="bottom-nav-item" data-page="networkingPage" data-title="Networking">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4.5 19.5a2.25 2.25 0 002.25 2.25h10.5a2.25 2.25 0 002.25-2.25V18.375m-15 0V18.375m0 0A2.25 2.25 0 014.5 16.125h15a2.25 2.25 0 012.25 2.25m0 0V19.5m0-1.125a2.25 2.25 0 00-2.25-2.25h-1.5M7.5 12.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+            Networking
+        </div>
+        <div class="bottom-nav-item" data-page="notificationsPage" data-title="Notificações">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" /></svg>Notificações
+        </div>
+        <div class="bottom-nav-item" data-page="profilePage" data-title="Perfil">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>Perfil
+        </div>
+    </nav>
+
+    <div id="speakerModal" class="modal">
+        <div class="modal-content">
+            <button id="speakerModalClose" class="modal-close-button">&times;</button>
+            <div class="flex flex-col items-center">
+                <img id="speakerModalAvatar" src="" alt="Foto do Palestrante" class="bg-gray-300">
+                <h3 id="speakerModalName" class="text-2xl font-bold mb-1"></h3>
+                <p id="speakerModalExpertise" class="text-gray-600 mb-3"></p>
+            </div>
+            <p id="speakerModalBio" class="text-gray-700 mb-4 text-sm leading-relaxed"></p>
+            <div class="bg-gray-100 p-3 rounded-lg mb-4">
+                <p class="font-semibold">Palestra:</p>
+                <p id="speakerModalLectureTitle" class="text-gray-800"></p>
+                <p id="speakerModalLectureTime" class="text-sm text-gray-600"></p>
+            </div>
+            <button id="speakerModalRemindButton" class="apple-button w-full">Criar Lembrete (10 min antes)</button>
+        </div>
+    </div>
+    
+    <div id="scheduleItemModal" class="modal">
+        <div class="modal-content">
+            <button id="scheduleItemModalClose" class="modal-close-button">&times;</button>
+            <h3 id="scheduleItemModalTime" class="text-xl font-bold mb-2 text-blue-600"></h3>
+            <p id="scheduleItemModalActivity" class="text-gray-800 text-lg mb-3"></p>
+            <div id="scheduleItemModalDetails" class="text-gray-700 text-sm leading-relaxed mb-4">
+                <p>Mais informações sobre esta atividade estarão disponíveis aqui. Você poderá encontrar links relevantes, materiais de apoio ou uma descrição mais aprofundada do conteúdo abordado.</p>
+            </div>
+            <div id="scheduleItemModalSpeakerInfo" class="mt-4 pt-4 border-t border-gray-200" style="display:none;">
+                 <h4 class="font-semibold text-gray-700 mb-2">Palestrante(s) nesta atividade:</h4>
+                 <div id="scheduleItemModalSpeakerContent" class="flex items-center">
+                    <img id="scheduleItemModalSpeakerAvatar" src="" alt="Foto do Palestrante" class="bg-gray-300 mr-3">
+                    <p id="scheduleItemModalSpeakerName" class="text-gray-800 font-medium"></p>
+                 </div>
+            </div>
+             <button id="scheduleItemModalRemindButton" class="apple-button w-full mt-4">Criar Lembrete (10 min antes)</button>
+        </div>
+    </div>
+
+
+    <div id="networkUserModal" class="modal">
+        <div class="modal-content">
+            <button id="networkUserModalClose" class="modal-close-button">&times;</button>
+            <div class="flex flex-col items-center">
+                <img id="networkUserModalAvatar" src="" alt="Foto do Usuário" class="bg-gray-300">
+                <h3 id="networkUserModalName" class="text-2xl font-bold mb-1"></h3>
+                <p id="networkUserModalCompany" class="text-gray-600 mb-3"></p>
+            </div>
+            <p id="networkUserModalBio" class="text-gray-700 mb-2 text-sm leading-relaxed"></p>
+            <p class="text-sm text-gray-600 mb-4"><strong>Interesses:</strong> <span id="networkUserModalInterests"></span></p>
+            <div id="networkUserModalActions" class="flex flex-col space-y-2"></div>
+        </div>
+    </div>
+
+    <div id="chatModal" class="modal">
+        <div class="modal-content">
+            <button id="chatModalClose" class="modal-close-button">&times;</button>
+            <div class="flex items-center mb-4">
+                <img id="chatModalUserAvatar" src="" alt="Foto do Usuário" class="bg-gray-300">
+                <h3 id="chatModalUserName" class="text-xl font-semibold ml-3"></h3>
+            </div>
+            <div id="chatMessages" class="bg-gray-50 rounded-lg p-2"></div>
+            <div class="flex mt-2">
+                <input type="text" id="chatInput" placeholder="Digite sua mensagem..." class="flex-grow p-2 border border-gray-300 rounded-l-md focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <button id="sendChatMessageButton" class="apple-button rounded-l-none px-4">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Dados de Exemplo (Mock Data) ---
+        const userBioGustavoMelles = "Palestrante, empreendedor e apaixonado por inovação, tecnologia e gente. Transforma marcas, produtos e pessoas por meio da criatividade e da inovação. É professor no MBA da PUCPR, colunista na Rádio CBN Londrina e fundador do portal BuscaIA.com, da Oi Robô e do movimento Pense com IA.";
+
+        const mockEvents = [
+            {
+                id: 1, title: "Pense com IA - Summit", date: "25-27 de Agosto, 2025", fullDate: "25 a 27 de Agosto de 2025",
+                location: "Transamerica Expo Center, Av. Dr. Mário Vilas Boas Rodrigues, 387 - Vila Guilherme, São Paulo - SP, CEP 02055-000",
+                description: "O 'Pense com IA - Summit' é o principal encontro para líderes, inovadores e entusiastas da Inteligência Artificial no Brasil. Explore as últimas tendências, desde IA generativa e machine learning até ética em IA e o futuro do trabalho. Com palestras inspiradoras, painéis de debate com especialistas renomados, workshops práticos e um espaço de exposição vibrante, o Summit é o lugar ideal para expandir seus conhecimentos, conectar-se com os pioneiros da área e descobrir como a IA está moldando o nosso mundo. Junte-se a nós para três dias de imersão total no universo da Inteligência Artificial!",
+                image: "https://placehold.co/600x400/8E44AD/FFFFFF?text=Pense+com+IA+Summit",
+                schedule: [ 
+                    { time: "Dia 1 - 09:00", activity: "Abertura Oficial e Credenciamento", speakerId: null, details: "Recepção dos participantes, entrega de materiais e café de boas-vindas." },
+                    { time: "Dia 1 - 10:00", activity: "Keynote: O Impacto da IA na Sociedade - Dra. Sofia Almeida", speakerId: "spk1", details: "Uma análise profunda sobre como a IA está transformando diversos setores e o cotidiano das pessoas." },
+                    { time: "Dia 1 - 11:30", activity: "Painel: IA Generativa - Criatividade Além dos Limites", speakerId: null, details: "Debate com especialistas sobre o potencial criativo da IA generativa, suas aplicações e implicações éticas. Participantes: Dr. Kenji Tanaka, Profa. Laura Alves." },
+                    { time: "Dia 1 - 14:00", activity: "Palestra: Inovação e IA: Estratégias para Transformar Negócios - com Gustavo Melles", speakerId: "spk_gm1", details: "Descubra como a Inteligência Artificial pode ser uma alavanca para a inovação disruptiva e a criação de novos modelos de negócio." },
+                    { time: "Dia 1 - 15:00", activity: "Trilha Técnica: Redes Neurais Convolucionais na Prática - Dr. Kenji Tanaka", speakerId: "spk3", details: "Um mergulho técnico nas CNNs, suas arquiteturas e aplicações em visão computacional." },
+                    { time: "Dia 1 - 16:30", activity: "Workshop: Desenvolvendo Chatbots Inteligentes com Processamento de Linguagem Natural", speakerId: null, details: "Mão na massa para criar seu primeiro chatbot utilizando ferramentas de PNL." },
+                    { time: "Dia 2 - 10:00", activity: "Palestra: Ética e Responsabilidade no Desenvolvimento de IA - Prof. Clara Vasconcelos", speakerId: "spk_cv", details: "Discussão sobre os princípios éticos que devem nortear o desenvolvimento e a implementação de sistemas de IA." },
+                    { time: "Dia 2 - 11:30", activity: "Mesa Redonda: O Futuro do Trabalho na Era da IA", speakerId: null, details: "Especialistas debatem as mudanças no mercado de trabalho, novas profissões e as habilidades necessárias para o futuro. Participantes: Roberta Lima, Dr. Ricardo Nobre." },
+                    { time: "Dia 2 - 14:00", activity: "Trilha Negócios: IA Aplicada ao Marketing e Vendas - Roberta Lima", speakerId: "spk_rl", details: "Como utilizar a IA para otimizar campanhas, personalizar a experiência do cliente e aumentar as vendas." },
+                    { time: "Dia 2 - 16:00", activity: "Apresentação de Cases de Sucesso: IA Transformando Empresas Reais", speakerId: null, details: "Empresas compartilham suas experiências e resultados com a implementação de soluções de IA." },
+                ],
+                speakers: [
+                    { id: "spk1", name: "Dra. Sofia Almeida", expertise: "Especialista em Ética em IA", avatar: "https://placehold.co/100x100/FF6347/FFFFFF?text=SA", bio: "Pesquisadora sênior com foco nas implicações sociais e éticas da Inteligência Artificial.", lectureTitle: "O Impacto da IA na Sociedade", lectureTime: "Dia 1 - 10:00" },
+                    { id: "spk_gm1", name: "Gustavo Melles", expertise: "Inovação e Tecnologia", avatar: "https://placehold.co/100x100/007AFF/FFFFFF?text=GM", bio: userBioGustavoMelles, lectureTitle: "Inovação e IA: Estratégias para Transformar Negócios", lectureTime: "Dia 1 - 14:00" },
+                    { id: "spk3", name: "Dr. Kenji Tanaka", expertise: "PhD em Machine Learning", avatar: "https://placehold.co/100x100/3498DB/FFFFFF?text=KT", bio: "Cientista de dados com publicações em redes neurais e aprendizado profundo.", lectureTitle: "Redes Neurais Convolucionais na Prática", lectureTime: "Dia 1 - 15:00" },
+                    { id: "spk_cv", name: "Prof. Clara Vasconcelos", expertise: "Direito Digital e Ética", avatar: "https://placehold.co/100x100/F39C12/FFFFFF?text=CV", bio: "Advogada especialista em regulação de novas tecnologias e ética aplicada à IA.", lectureTitle: "Ética e Responsabilidade no Desenvolvimento de IA", lectureTime: "Dia 2 - 10:00" },
+                     { id: "spk_rl", name: "Roberta Lima", expertise: "Marketing Digital e IA", avatar: "https://placehold.co/100x100/1ABC9C/FFFFFF?text=RL", bio: "Consultora de marketing com foco em automação e inteligência de dados para otimização de resultados.", lectureTitle: "IA Aplicada ao Marketing e Vendas", lectureTime: "Dia 2 - 14:00" },
+                     { id: "spk_la", name: "Profa. Laura Alves", expertise: "UX Research", avatar: "https://placehold.co/100x100/FFB6C1/FFFFFF?text=LA", bio: "Pesquisadora sênior com vasta experiência em condução de estudos com usuários.", lectureTitle: "Participante do Painel IA Generativa", lectureTime: "Dia 1 - 11:30" },
+                     { id: "spk_rn_summit", name: "Dr. Ricardo Nobre", expertise: "Consultor em Estratégia Digital", avatar: "https://placehold.co/100x100/27AE60/FFFFFF?text=RN", bio: "Ajuda empresas líderes a navegarem na transformação digital.", lectureTitle: "Participante da Mesa Redonda: Futuro do Trabalho", lectureTime: "Dia 2 - 11:30" },
+
+                ],
+                sponsors: [
+                    { id: "sponsor1", name: "IA Global Corp", logo: "https://placehold.co/150x80/2ECC71/FFFFFF?text=IA+Global", description: "Líder em soluções de inteligência artificial para grandes empresas, impulsionando a inovação em escala global.", social: {linkedin: "#", site: "#", twitter: "#"} },
+                    { id: "sponsor2", name: "InovaTech Ventures", logo: "https://placehold.co/150x80/F1C40F/000000?text=InovaTech", description: "Apoiando o futuro da tecnologia com investimentos estratégicos em startups de IA promissoras e disruptivas.", social: {twitter: "#", site: "#", instagram: "#"} },
+                    { id: "sponsor5", name: "DataDriven Solutions", logo: "https://placehold.co/150x80/3498DB/FFFFFF?text=DataDriven", description: "Especialistas em análise de dados e machine learning para otimização de processos e tomada de decisão inteligente.", social: {linkedin: "#", site: "#"} },
+                    { id: "sponsor6", name: "Conecta Hub Coworking", logo: "https://placehold.co/150x80/E74C3C/FFFFFF?text=ConectaHub", description: "Espaço de inovação e colaboração para startups e profissionais de tecnologia.", social: {instagram: "#", site: "#"} }
+                ],
+                feedPosts: [
+                    { userId: "user1", userName: "Beatriz Oliveira", avatar: "https://placehold.co/80x80/FFC0CB/000000?text=BO", timestamp: "Ontem às 15:30", text: "Super animada para o Pense com IA Summit! A palestra do Gustavo Melles parece imperdível.", image: null },
+                    { userId: "user2", userName: "Lucas Martins", avatar: "https://placehold.co/80x80/ADD8E6/000000?text=LM", timestamp: "Hoje às 09:10", text: "Chegando no Transamerica Expo Center! #PenseComIA", image: "https://placehold.co/400x300/EEEEEE/999999?text=Local+Pense+IA" },
+                ]
+            },
+            {
+                id: 2, title: "Imersão de IA para Líderes", date: "10-12 de Setembro, 2025", fullDate: "10 a 12 de Setembro de 2025",
+                location: "AMCHAM Business Center, Rua da Paz, 1431 - Chácara Santo Antônio, São Paulo - SP, CEP 04713-001",
+                description: "Uma imersão exclusiva de três dias desenhada para capacitar líderes e gestores a compreenderem o potencial estratégico da Inteligência Artificial e como aplicá-la para impulsionar a inovação e a competitividade em seus negócios. Abordaremos desde os conceitos fundamentais de IA e suas aplicações setoriais, até a construção de uma cultura data-driven, gestão de projetos de IA e os aspectos éticos e de governança. Com estudos de caso práticos, workshops interativos e sessões de mentoria com especialistas do mercado, esta imersão fornecerá as ferramentas necessárias para você liderar a transformação digital na sua organização. Vagas limitadas para garantir uma experiência personalizada e de alto impacto.",
+                image: "https://placehold.co/600x400/3498DB/FFFFFF?text=Imersão+IA+Líderes",
+                schedule: [ 
+                    { time: "Dia 1 - 09:00", activity: "Boas-vindas e Introdução à IA Estratégica - Equipe Organizadora", speakerId: null, details: "Apresentação da agenda, objetivos da imersão e networking inicial entre os participantes." },
+                    { time: "Dia 1 - 10:30", activity: "Palestra: IA para Tomada de Decisão em Negócios - Dr. Ricardo Nobre", speakerId: "spk7", details: "Como utilizar dados e algoritmos de IA para embasar decisões estratégicas mais assertivas e eficientes." },
+                    { time: "Dia 1 - 12:00", activity: "Almoço Executivo e Networking Dirigido", speakerId: null, details: "Oportunidade para interagir com palestrantes e outros líderes em um ambiente informal." },
+                    { time: "Dia 1 - 14:00", activity: "Workshop: Identificando Oportunidades de IA na Sua Empresa - Facilitador: André Ferreira", speakerId: "spk_af", details: "Metodologias práticas para mapear processos e identificar onde a IA pode gerar maior valor." },
+                    { time: "Dia 1 - 16:00", activity: "Estudo de Caso: Implementação de IA em Multinacional - com Gustavo Melles", speakerId: "spk_gm2", details: "Análise de um case real de sucesso na aplicação de IA, com desafios, aprendizados e resultados." },
+                    { time: "Dia 2 - 09:30", activity: "Palestra: Construindo uma Cultura Data-Driven e Orientada à IA - Carla Moraes", speakerId: "spk8", details: "Passos essenciais para fomentar uma mentalidade analítica e preparar sua equipe para a era da IA." },
+                    { time: "Dia 2 - 11:00", activity: "Painel: Desafios da Gestão de Projetos de IA e Mitigação de Riscos", speakerId: null, details: "Especialistas discutem as particularidades de gerenciar projetos de IA, desde a concepção até a implementação e manutenção. Participantes: Dr. Ricardo Nobre, André Ferreira." },
+                    { time: "Dia 2 - 14:00", activity: "Workshop: Aspectos Éticos, Legais e de Governança em IA - Dra. Patrícia Lemos", speakerId: "spk_pl", details: "Navegando pelas complexidades da LGPD, vieses algorítmicos e a importância da transparência em sistemas de IA." },
+                    { time: "Dia 3 - 10:00", activity: "Sessões de Mentoria Individual com Especialistas", speakerId: null, details: "Agende um horário com nossos mentores para discutir seus desafios específicos e obter orientação personalizada." },
+                    { time: "Dia 3 - 15:00", activity: "Apresentação de Planos de Ação e Encerramento da Imersão", speakerId: null, details: "Participantes compartilham seus insights e planos para aplicar os aprendizados em suas organizações. Entrega de certificados." }
+                ],
+                speakers: [ 
+                    { id: "spk_gm2", name: "Gustavo Melles", expertise: "Inovação e Estratégia com IA", avatar: "https://placehold.co/100x100/007AFF/FFFFFF?text=GM", bio: userBioGustavoMelles, lectureTitle: "Estudo de Caso: Implementação de IA em Multinacional", lectureTime: "Dia 1 - 16:00" },
+                    { id: "spk7", name: "Dr. Ricardo Nobre", expertise: "Consultor em Estratégia Digital", avatar: "https://placehold.co/100x100/27AE60/FFFFFF?text=RN", bio: "Ajuda empresas líderes a navegarem na transformação digital com foco em resultados.", lectureTitle: "IA para Tomada de Decisão em Negócios", lectureTime: "Dia 1 - 10:30" },
+                    { id: "spk8", name: "Carla Moraes", expertise: "Especialista em Cultura Organizacional", avatar: "https://placehold.co/100x100/E67E22/FFFFFF?text=CM", bio: "Facilitadora de processos de mudança e desenvolvimento de culturas inovadoras e orientadas a dados.", lectureTitle: "Construindo uma Cultura Data-Driven", lectureTime: "Dia 2 - 09:30" },
+                    { id: "spk_af", name: "André Ferreira", expertise: "Consultor em Inovação e IA", avatar: "https://placehold.co/100x100/16A085/FFFFFF?text=AF", bio: "Especialista em ajudar empresas a identificar e implementar soluções de IA para otimização de processos.", lectureTitle: "Workshop: Identificando Oportunidades de IA", lectureTime: "Dia 1 - 14:00" },
+                    { id: "spk_pl", name: "Dra. Patrícia Lemos", expertise: "Advogada Especialista em Direito Digital", avatar: "https://placehold.co/100x100/C0392B/FFFFFF?text=PL", bio: "Referência em LGPD e implicações legais de novas tecnologias, incluindo Inteligência Artificial.", lectureTitle: "Workshop: Aspectos Éticos e Legais em IA", lectureTime: "Dia 2 - 14:00" }
+                ],
+                 sponsors: [
+                    { id: "sponsor3", name: "Future AI Systems", logo: "https://placehold.co/150x80/9B59B6/FFFFFF?text=Future+AI", description: "Desenvolvendo o futuro da inteligência artificial com plataformas customizáveis e consultoria especializada.", social: {linkedin: "#", site: "#", twitter: "#"} },
+                    { id: "sponsor4", name: "Líderes Conectados", logo: "https://placehold.co/150x80/E74C3C/FFFFFF?text=Líderes+", description: "Promovendo o desenvolvimento de lideranças para a nova era digital, com foco em inovação e tecnologia.", social: {instagram: "#", site: "#"} },
+                    { id: "sponsor7", name: "Alpha Analytics", logo: "https://placehold.co/150x80/2980B9/FFFFFF?text=Alpha", description: "Transformando dados em decisões estratégicas com o poder da Inteligência Artificial.", social: {linkedin: "#", site: "#"} }
+
+                ],
+                feedPosts: [ 
+                    { userId: "user5", userName: "Tiago Pereira", avatar: "https://placehold.co/80x80/E6E6FA/000000?text=TP", timestamp: "Há 2 dias", text: "Inscrição confirmada para a Imersão de IA para Líderes. Hora de levar a gestão para o próximo nível!", image: null },
+                    { userId: "user6", userName: "Sofia Mendes", avatar: "https://placehold.co/80x80/FFFACD/000000?text=SM", timestamp: "Há 1 dia", text: "Ansiosa para o estudo de caso do Gustavo Melles na Imersão IA. #IALideres", image: "https://placehold.co/400x300/D2B48C/FFFFFF?text=Amcham+SP"}
+                ]
+            }
+        ];
+        
+        const additionalUsers = Array.from({ length: 30 }, (_, i) => ({
+            id: `globalUser${i + 7}`, 
+            name: `Participante ${i + 7}`,
+            company: `Agência Criativa ${String.fromCharCode(65 + (i % 26))}`,
+            avatar: `https://placehold.co/100x100/${Math.floor(Math.random()*16777215).toString(16)}/FFFFFF?text=P${i+7}`,
+            interests: [["UX/UI", "Frontend", "Mobile"][i%3], "Networking", "Eventos Tech"],
+            bio: `Profissional de ${["Design Gráfico", "Desenvolvimento Web", "Marketing Digital"][i%3]} buscando expandir conhecimentos e rede de contatos.`,
+            connected: i % 4 === 0, 
+            hasNewMessages: (i % 4 === 0) && (i % 3 === 0), 
+            lastMessageTimestamp: new Date(Date.now() - Math.random() * 1000 * 60 * 60 * 48).toISOString() 
+        }));
+
+        let mockGlobalUsers = [
+            { id: "globalUser1", name: "Roberto Alves", company: "Tech Solutions", avatar: "https://placehold.co/100x100/FFA07A/FFFFFF?text=RA", interests: ["IA", "Cloud", "Startups"], bio: "Empreendedor e entusiasta de novas tecnologias.", connected: false, hasNewMessages: false },
+            { id: "globalUser2", name: "Clara Dias", company: "Inova Web", avatar: "https://placehold.co/100x100/B0E0E6/FFFFFF?text=CD", interests: ["UX Design", "Frontend"], bio: "Designer apaixonada por criar interfaces.", connected: true, hasNewMessages: true, lastMessageTimestamp: new Date().toISOString() },
+            { id: "globalUser3", name: "Miguel Santos", company: "Future Devs", avatar: "https://placehold.co/100x100/98FB98/FFFFFF?text=MS", interests: ["Backend", "DevOps"], bio: "Desenvolvedor Full Stack.", connected: true, hasNewMessages: false },
+            { id: "globalUser4", name: "Laura Ferreira", company: "Creative Minds", avatar: "https://placehold.co/100x100/DDA0DD/FFFFFF?text=LF", interests: ["Marketing", "Branding"], bio: "Estrategista de marketing.", connected: false, hasNewMessages: false },
+            { id: "globalUser5", name: "Beatriz Oliveira", company: "Data Insights", avatar: "https://placehold.co/80x80/FFC0CB/000000?text=BO", interests: ["Big Data", "Analytics"], bio: "Cientista de dados.", connected: true, hasNewMessages: true, lastMessageTimestamp: new Date(Date.now() - 1000*60*30).toISOString() }, 
+            { id: "globalUser6", name: "Lucas Martins", company: "ConnectTech", avatar: "https://placehold.co/80x80/ADD8E6/000000?text=LM", interests: ["IoT", "Redes"], bio: "Engenheiro focado em IoT.", connected: true, hasNewMessages: false },
+            ...additionalUsers
+        ];
+        
+        let notifications = []; 
+        let userProfile = {
+            name: "Gustavo Melles",
+            email: "gustavo.melles@example.com",
+            avatar: "https://placehold.co/100x100/007AFF/FFFFFF?text=GM",
+            bio: userBioGustavoMelles,
+            jobTitle: "Palestrante & Consultor",
+            company: "BuscaIA Eventos / Autônomo",
+            area: "Tecnologia, Web3, UX/UI Design",
+            linkedin: "https://linkedin.com/in/gustavomelles",
+            instagram: "https://instagram.com/gustavomelles",
+            x: "https://x.com/gustavomelles",
+            whatsapp: "https://wa.me/5543991234567"
+        };
+
+        // --- Elementos da DOM ---
+        const splashScreen = document.getElementById('splashScreen');
+        const appHeader = document.querySelector('header.apple-header'); 
+        const appMainContent = document.querySelector('main.content-wrapper'); 
+        const appBottomNav = document.querySelector('nav.bottom-nav'); 
+
+
+        const eventGrid = document.getElementById('eventGrid');
+        const eventListPage = document.getElementById('eventListPage');
+        const eventDetailPage = document.getElementById('eventDetailPage');
+        const networkingPage = document.getElementById('networkingPage');
+        const profilePage = document.getElementById('profilePage');
+        const editProfilePage = document.getElementById('editProfilePage');
+        const notificationsPage = document.getElementById('notificationsPage');
+        const notificationsList = document.getElementById('notificationsList');
+        const notificationsInfoText = document.getElementById('notificationsInfoText'); 
+
+        const pageTitleElement = document.getElementById('pageTitle');
+        const backButton = document.getElementById('backButton');
+        const eventDetailCard = document.getElementById('eventDetailCard');
+
+        const detailEventTitle = document.getElementById('detailEventTitle');
+        const detailEventDate = document.getElementById('detailEventDate');
+        const detailEventLocation = document.getElementById('detailEventLocation');
+        const detailEventImage = document.getElementById('detailEventImage');
+        const imagePlaceholderMain = eventDetailPage.querySelector('.image-placeholder-main');
+        const detailEventDescription = document.getElementById('detailEventDescription');
+
+        const detailEventSchedule = document.getElementById('detailEventSchedule');
+        const detailEventSpeakers = document.getElementById('detailEventSpeakers');
+        const detailEventSponsors = document.getElementById('detailEventSponsors');
+        
+        const eventFeedContentContainer = document.getElementById('eventFeedContentContainer');
+        const feedPostButton = document.getElementById('feedPostButton');
+        const feedNewMessageText = document.getElementById('feedNewMessageText');
+        const feedAttachPhotoButton = document.getElementById('feedAttachPhotoButton');
+
+        const globalNetworkingList = document.getElementById('globalNetworkingList');
+        const networkSearchInput = document.getElementById('networkSearchInput');
+        const eventDetailTabsContainer = document.getElementById('eventDetailTabsContainer');
+
+        const viewProfileAvatar = document.getElementById('viewProfileAvatar');
+        const viewProfileName = document.getElementById('viewProfileName');
+        const viewProfileEmail = document.getElementById('viewProfileEmail');
+        const viewProfileBio = document.getElementById('viewProfileBio');
+        const viewProfileJob = document.getElementById('viewProfileJob');
+        const viewProfileLinkedin = document.getElementById('viewProfileLinkedin');
+        const viewProfileInstagram = document.getElementById('viewProfileInstagram');
+        const viewProfileX = document.getElementById('viewProfileX');
+        const viewProfileWhatsapp = document.getElementById('viewProfileWhatsapp');
+        const goToEditProfileButton = document.getElementById('goToEditProfileButton');
+
+        const editProfileAvatarPreview = document.getElementById('editProfileAvatarPreview');
+        const editProfileAvatarInput = document.getElementById('editProfileAvatarInput');
+        const editProfileNameInput = document.getElementById('editProfileNameInput');
+        const editProfileBioTextarea = document.getElementById('editProfileBioTextarea');
+        const editProfileJobInput = document.getElementById('editProfileJobInput');
+        const editProfileCompanyInput = document.getElementById('editProfileCompanyInput');
+        const editProfileAreaInput = document.getElementById('editProfileAreaInput');
+        const editProfileLinkedinInput = document.getElementById('editProfileLinkedinInput');
+        const editProfileInstagramInput = document.getElementById('editProfileInstagramInput');
+        const editProfileXInput = document.getElementById('editProfileXInput');
+        const editProfileWhatsappInput = document.getElementById('editProfileWhatsappInput');
+        const saveProfileButton = document.getElementById('saveProfileButton');
+        const cancelEditProfileButton = document.getElementById('cancelEditProfileButton');
+
+        const speakerModal = document.getElementById('speakerModal');
+        const speakerModalClose = document.getElementById('speakerModalClose');
+        const speakerModalAvatar = document.getElementById('speakerModalAvatar');
+        const speakerModalName = document.getElementById('speakerModalName');
+        const speakerModalExpertise = document.getElementById('speakerModalExpertise');
+        const speakerModalBio = document.getElementById('speakerModalBio');
+        const speakerModalLectureTitle = document.getElementById('speakerModalLectureTitle');
+        const speakerModalLectureTime = document.getElementById('speakerModalLectureTime');
+        const speakerModalRemindButton = document.getElementById('speakerModalRemindButton');
+        
+        const scheduleItemModal = document.getElementById('scheduleItemModal');
+        const scheduleItemModalClose = document.getElementById('scheduleItemModalClose');
+        const scheduleItemModalTime = document.getElementById('scheduleItemModalTime');
+        const scheduleItemModalActivity = document.getElementById('scheduleItemModalActivity');
+        const scheduleItemModalDetails = document.getElementById('scheduleItemModalDetails');
+        const scheduleItemModalSpeakerInfo = document.getElementById('scheduleItemModalSpeakerInfo');
+        const scheduleItemModalSpeakerContent = document.getElementById('scheduleItemModalSpeakerContent');
+        const scheduleItemModalSpeakerAvatar = document.getElementById('scheduleItemModalSpeakerAvatar');
+        const scheduleItemModalSpeakerName = document.getElementById('scheduleItemModalSpeakerName');
+        const scheduleItemModalRemindButton = document.getElementById('scheduleItemModalRemindButton');
+
+
+        const networkUserModal = document.getElementById('networkUserModal');
+        const networkUserModalClose = document.getElementById('networkUserModalClose');
+        const networkUserModalAvatar = document.getElementById('networkUserModalAvatar');
+        const networkUserModalName = document.getElementById('networkUserModalName');
+        const networkUserModalCompany = document.getElementById('networkUserModalCompany');
+        const networkUserModalBio = document.getElementById('networkUserModalBio');
+        const networkUserModalInterests = document.getElementById('networkUserModalInterests');
+        const networkUserModalActions = document.getElementById('networkUserModalActions');
+
+        const chatModal = document.getElementById('chatModal');
+        const chatModalClose = document.getElementById('chatModalClose');
+        const chatModalUserAvatar = document.getElementById('chatModalUserAvatar');
+        const chatModalUserName = document.getElementById('chatModalUserName');
+        const chatMessagesContainer = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendChatMessageButton = document.getElementById('sendChatMessageButton');
+        let currentChatUserId = null;
+
+        // --- Splash Screen Logic ---
+        setTimeout(() => {
+            splashScreen.style.opacity = '0';
+            setTimeout(() => {
+                splashScreen.style.display = 'none';
+                if(appHeader) appHeader.style.display = 'block'; 
+                if(appMainContent) appMainContent.style.display = 'block';
+                if(appBottomNav) appBottomNav.style.display = 'flex';
+                navigateToPage('eventListPage', 'BuscaIA Eventos');
+            }, 500); 
+        }, 2000); 
+
+
+        // --- Funções de Renderização ---
+        function renderEventList() {
+            eventGrid.innerHTML = '';
+            mockEvents.forEach(event => {
+                const card = document.createElement('div');
+                card.className = 'apple-card p-5 cursor-pointer flex flex-col justify-between';
+                const cardImage = event.image || `https://placehold.co/600x400/cccccc/969696?text=${encodeURIComponent(event.title.substring(0,15))}`;
+                card.innerHTML = `
+                    <div>
+                        <img src="${cardImage}" alt="${event.title}" class="w-full h-40 object-cover rounded-md mb-3 bg-gray-200" onerror="this.src='https://placehold.co/600x400/cccccc/969696?text=Indispon%C3%ADvel';">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-1">${event.title}</h3>
+                        <p class="text-sm text-gray-500 mb-2">${event.date}</p>
+                        <p class="text-sm text-gray-600 mb-3 truncate">${event.description.substring(0, 80)}...</p>
+                    </div>
+                    <button class="apple-button text-sm w-full mt-auto view-details-btn" data-event-id="${event.id}">Acessar Evento</button>
+                `;
+                card.querySelector('.view-details-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    showEventDetails(event.id);
+                });
+                eventGrid.appendChild(card);
+            });
+        }
+
+        function showEventDetails(eventId) {
+            const event = mockEvents.find(e => e.id === parseInt(eventId));
+            if (!event) return;
+            eventDetailCard.dataset.currentEventId = eventId;
+            detailEventTitle.textContent = event.title;
+            detailEventDate.textContent = event.fullDate;
+            detailEventLocation.textContent = event.location;
+            detailEventImage.src = event.image || `https://placehold.co/600x400/cccccc/969696?text=${encodeURIComponent(event.title.substring(0,15))}`;
+            detailEventImage.alt = event.title;
+            imagePlaceholderMain.style.display = event.image ? 'none' : 'flex';
+            imagePlaceholderMain.textContent = event.image ? '' : `[Imagem da capa para ${event.title} indisponível]`;
+            detailEventDescription.textContent = event.description;
+            renderSchedule(event.schedule, event.id); 
+            renderSpeakers(event.speakers, event.id);
+            renderFeed(event.feedPosts || []);
+            renderSponsors(event.sponsors || []);
+            setActiveTab('eventAboutContent');
+            navigateToPage('eventDetailPage', event.title);
+        }
+        
+        detailEventImage.onerror = function() {
+            this.style.display = 'none';
+            imagePlaceholderMain.style.display = 'flex';
+            imagePlaceholderMain.textContent = `[Imagem da capa para ${detailEventTitle.textContent} indisponível]`;
+        };
+
+        function setActiveTab(tabId) {
+            eventDetailTabsContainer.querySelectorAll('.event-tab-button').forEach(b => b.classList.remove('active'));
+            eventDetailPage.querySelectorAll('.event-tab-content').forEach(c => c.classList.remove('active'));
+            const activeButton = eventDetailTabsContainer.querySelector(`[data-tab="${tabId}"]`);
+            const activeContent = document.getElementById(tabId);
+            if (activeButton) activeButton.classList.add('active');
+            if (activeContent) activeContent.classList.add('active');
+        }
+
+        function renderSchedule(schedule, eventId) { 
+            detailEventSchedule.innerHTML = '';
+            if (schedule && schedule.length > 0) {
+                schedule.forEach(item => {
+                    const el = document.createElement('div');
+                    el.className = 'p-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors';
+                    el.innerHTML = `<p class="font-medium text-gray-700">${item.time} - ${item.activity}</p>`;
+                    el.addEventListener('click', () => openScheduleItemModal(eventId, item));
+                    detailEventSchedule.appendChild(el);
+                });
+            } else {
+                detailEventSchedule.innerHTML = '<p class="text-gray-500">Nenhuma programação disponível.</p>';
+            }
+        }
+
+
+        function renderSpeakers(speakers, eventId) {
+            detailEventSpeakers.innerHTML = '';
+            if (speakers && speakers.length > 0) {
+                speakers.forEach(speaker => {
+                    const el = document.createElement('div');
+                    el.className = 'speaker-item flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:bg-gray-100 transition-colors';
+                    el.dataset.speakerId = speaker.id;
+                    el.dataset.eventId = eventId;
+                    const avatar = speaker.avatar || `https://placehold.co/100x100/cccccc/969696?text=${speaker.name.substring(0,1)}`;
+                    el.innerHTML = `
+                        <img src="${avatar}" alt="${speaker.name}" class="user-avatar bg-gray-300">
+                        <div>
+                            <p class="font-semibold text-gray-800">${speaker.name}</p>
+                            <p class="text-sm text-gray-600">${speaker.expertise.substring(0,30)}...</p>
+                        </div>`;
+                    el.addEventListener('click', () => openSpeakerModal(speaker.id, eventId));
+                    detailEventSpeakers.appendChild(el);
+                });
+            } else {
+                detailEventSpeakers.innerHTML = '<p class="text-gray-500">Nenhum palestrante listado.</p>';
+            }
+        }
+        
+        function renderSponsors(sponsors) {
+            detailEventSponsors.innerHTML = '';
+            if (sponsors && sponsors.length > 0) {
+                sponsors.forEach(sponsor => {
+                    const el = document.createElement('div');
+                    el.className = 'sponsor-item flex flex-col sm:flex-row items-center p-4 bg-gray-50 rounded-lg border border-gray-200';
+                    const logo = sponsor.logo || `https://placehold.co/150x80/cccccc/969696?text=${encodeURIComponent(sponsor.name.substring(0,10))}`;
+                    
+                    let socialLinksHTML = '<div class="flex flex-wrap justify-center sm:justify-start gap-x-3 gap-y-1 mt-2 sm:mt-0">';
+                    if(sponsor.social.linkedin) socialLinksHTML += `<a href="${sponsor.social.linkedin}" target="_blank" class="text-blue-600 hover:underline">LinkedIn</a>`;
+                    if(sponsor.social.twitter) socialLinksHTML += `<a href="${sponsor.social.twitter}" target="_blank" class="text-sky-500 hover:underline">X/Twitter</a>`;
+                    if(sponsor.social.instagram) socialLinksHTML += `<a href="${sponsor.social.instagram}" target="_blank" class="text-pink-600 hover:underline">Instagram</a>`;
+                    if(sponsor.social.site) socialLinksHTML += `<a href="${sponsor.social.site}" target="_blank" class="text-green-600 hover:underline">Site</a>`;
+                    socialLinksHTML += '</div>';
+
+                    el.innerHTML = `
+                        <img src="${logo}" alt="Logo ${sponsor.name}" class="sponsor-logo bg-gray-300 mb-3 sm:mb-0 sm:mr-4">
+                        <div class="flex-grow text-center sm:text-left">
+                            <h4 class="text-lg font-semibold text-gray-800">${sponsor.name}</h4>
+                            <p class="text-sm text-gray-600 mb-2">${sponsor.description}</p>
+                            <div class="text-xs"> ${socialLinksHTML}</div>
+                        </div>
+                        <button class="apple-secondary-button text-xs py-1 px-3 mt-3 sm:mt-0 sm:ml-4 share-contact-sponsor-btn" data-sponsor-name="${sponsor.name}">Compartilhar Contato</button>
+                    `;
+                    el.querySelector('.share-contact-sponsor-btn').addEventListener('click', function() {
+                        alert(`Seu contato foi compartilhado com ${this.dataset.sponsorName} (simulado). Obrigado pelo seu interesse!`);
+                        addNotification(`Você compartilhou seu contato com o patrocinador ${this.dataset.sponsorName}.`, 'info');
+                    });
+                    detailEventSponsors.appendChild(el);
+                });
+            } else {
+                detailEventSponsors.innerHTML = '<p class="text-gray-500 text-center">Nenhum patrocinador para este evento.</p>';
+            }
+        }
+
+
+        function renderFeed(posts) {
+            eventFeedContentContainer.innerHTML = '';
+            if (posts && posts.length > 0) {
+                posts.forEach(post => {
+                    const el = document.createElement('div');
+                    el.className = 'feed-item p-4 rounded-lg shadow';
+                    const userAvatar = post.avatar || `https://placehold.co/80x80/cccccc/969696?text=${post.userName.substring(0,1)}`;
+                    let imageHTML = '';
+                    if (post.image) {
+                        imageHTML = `<img src="${post.image}" alt="Imagem do post" class="feed-image-placeholder bg-gray-300" onerror="this.src='https://placehold.co/400x300/EEEEEE/999999?text=Erro+Img';">`;
+                    }
+                    el.innerHTML = `
+                        <div class="flex items-start">
+                            <img src="${userAvatar}" alt="${post.userName}" class="user-avatar bg-gray-300">
+                            <div>
+                                <p class="font-semibold text-gray-800">${post.userName}</p>
+                                <p class="text-xs text-gray-500 mb-1">${post.timestamp}</p>
+                            </div>
+                        </div>
+                        <p class="text-gray-700 mt-2">${post.text}</p>
+                        ${imageHTML}
+                        <div class="mt-3 flex space-x-4">
+                            <button class="text-sm text-blue-600 hover:underline flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor"><path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0016.5 8H10V6a2 2 0 00-2-2H6a2 2 0 00-2 2v4.333z" /></svg>Curtir</button>
+                            <button class="text-sm text-blue-600 hover:underline flex items-center"><svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zm-4 0H9v2h2V9z" clip-rule="evenodd" /></svg>Comentar</button>
+                        </div>`;
+                    eventFeedContentContainer.appendChild(el);
+                });
+            } else {
+                eventFeedContentContainer.innerHTML = '<p class="text-gray-500 text-center py-4">Nenhuma mensagem no feed ainda. Seja o primeiro a postar!</p>';
+            }
+        }
+        
+        function sortGlobalUsers(users) {
+            return users.sort((a, b) => {
+                if (a.connected && a.hasNewMessages && (!b.connected || !b.hasNewMessages)) return -1;
+                if (b.connected && b.hasNewMessages && (!a.connected || !a.hasNewMessages)) return 1;
+                if (a.connected && a.hasNewMessages && b.connected && b.hasNewMessages) {
+                    return new Date(b.lastMessageTimestamp) - new Date(a.lastMessageTimestamp);
+                }
+                if (a.connected && !b.connected) return -1;
+                if (b.connected && !a.connected) return 1;
+                return a.name.localeCompare(b.name);
+            });
+        }
+
+        function renderGlobalNetworkingList(usersToRender) {
+            const sortedUsers = sortGlobalUsers([...usersToRender]); 
+            globalNetworkingList.innerHTML = '';
+            if (sortedUsers && sortedUsers.length > 0) {
+                sortedUsers.forEach(user => {
+                    const el = document.createElement('div');
+                    el.className = 'network-item flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 shadow-sm cursor-pointer hover:bg-gray-100 transition-colors';
+                    el.dataset.userId = user.id;
+                    const avatar = user.avatar || `https://placehold.co/100x100/cccccc/969696?text=${user.name.substring(0,1)}`;
+                    let newMessageIndicatorHTML = '';
+                    if (user.connected && user.hasNewMessages) {
+                        newMessageIndicatorHTML = '<span class="new-message-indicator" title="Nova mensagem"></span>';
+                    }
+
+                    el.innerHTML = `
+                        <div class="flex items-center">
+                            <img src="${avatar}" alt="${user.name}" class="user-avatar bg-gray-300">
+                            <div>
+                                <p class="font-semibold text-gray-800">${user.name} ${newMessageIndicatorHTML}</p>
+                                <p class="text-sm text-gray-600">${user.company || 'Sem empresa informada'}</p>
+                            </div>
+                        </div>
+                        <div class="actions">
+                           ${renderNetworkUserActions(user)}
+                        </div>`;
+                    el.addEventListener('click', (e) => {
+                        if (!e.target.closest('button')) {
+                           openNetworkUserModal(user.id);
+                        }
+                    });
+                    globalNetworkingList.appendChild(el);
+                });
+            } else {
+                globalNetworkingList.innerHTML = '<p class="text-gray-500 text-center py-4">Nenhum usuário encontrado.</p>';
+            }
+        }
+        
+        function renderNetworkUserActions(user) {
+            if (user.connected) {
+                return `<button class="apple-secondary-button text-xs py-1 px-2 chat-user-btn" data-user-id="${user.id}">Chat</button>
+                        <button class="apple-button danger text-xs py-1 px-2 disconnect-user-btn ml-2" data-user-id="${user.id}">Desconectar</button>`;
+            }
+            return `<button class="apple-button text-xs py-1 px-2 connect-user-btn" data-user-id="${user.id}">Conectar</button>`;
+        }
+
+        function addNotification(message, type = 'info', data = {}) {
+            notifications.unshift({ text: message, date: new Date(), type, data, read: false, isExample: false }); // Real notifications are not examples
+            notifications.sort((a,b) => b.date - a.date);
+            if (notificationsPage.classList.contains('active')) { 
+                 renderNotifications();
+            }
+        }
+        
+        function getSampleNotifications() { 
+            const sampleBaseNotifications = [
+                { 
+                    text: `Lembrete: Sua palestra "Inovação e IA: Estratégias para Transformar Negócios" no evento "${mockEvents[0].title}" começa em 10 minutos!`,
+                    type: 'reminder',
+                    data: { eventId: mockEvents[0].id, tab: 'eventScheduleContent' },
+                    isExample: true
+                },
+                { 
+                    text: `Nova mensagem de ${mockGlobalUsers[1].name}.`,
+                    type: 'newMessage',
+                    data: { userId: mockGlobalUsers[1].id },
+                    isExample: true 
+                },
+                { 
+                    text: `Você foi mencionado por ${mockEvents[0].feedPosts[1].userName} no feed do evento "${mockEvents[0].title}": "Ótima pergunta @${userProfile.name}!"`,
+                    type: 'mention',
+                    data: { eventId: mockEvents[0].id, tab: 'eventFeedContentSection' },
+                    isExample: true
+                },
+                { 
+                    text: `Aviso do Organizador (${mockEvents[0].title}): A sala da palestra "${mockEvents[0].schedule[4].activity}" foi alterada para o Auditório Principal.`,
+                    type: 'organizer',
+                    data: { eventId: mockEvents[0].id },
+                    isExample: true 
+                }
+            ];
+            return sampleBaseNotifications.map((n, index) => ({...n, date: new Date(Date.now() - (index + 1) * 1000 * 60 * 60 * (Math.random() * 24) ), read: false}));
+        }
+
+
+        function renderNotifications() {
+            notificationsList.innerHTML = ''; 
+            
+            let realNotifications = notifications.filter(n => !n.isExample);
+            let notificationsToDisplay = [];
+
+            if (realNotifications.length > 0) {
+                notificationsToDisplay = [...realNotifications];
+            } else {
+                notificationsToDisplay = getSampleNotifications(); 
+            }
+            
+            notificationsToDisplay.sort((a,b) => b.date - a.date);
+
+            if (notificationsToDisplay.length === 0) {
+                // Este caso só ocorreria se getSampleNotifications retornasse vazio, o que não deve acontecer.
+                // O texto informativo geral já está visível.
+                const noSpecificNotifs = document.createElement('p');
+                noSpecificNotifs.className = 'text-gray-500 text-center text-sm';
+                noSpecificNotifs.textContent = 'Nenhuma notificação no momento.';
+                notificationsList.appendChild(noSpecificNotifs);
+            } else {
+                notificationsToDisplay.forEach(notif => {
+                    const el = document.createElement('div');
+                    el.className = 'p-4 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200 transition-colors';
+                    if (notif.isExample) el.classList.add('opacity-75');
+                    
+                    el.innerHTML = `
+                        <p class="font-medium text-gray-700">${notif.text} ${notif.isExample ? '<span class="text-xs text-blue-500">(Exemplo)</span>' : ''}</p>
+                        <p class="text-sm text-gray-500">${formatDate(notif.date)}</p>
+                    `;
+                    el.addEventListener('click', () => handleNotificationClick(notif));
+                    notificationsList.appendChild(el);
+                });
+            }
+        }
+
+
+        function handleNotificationClick(notification) {
+            if (!notification.isExample) { // Marcar como lida apenas se for real
+                notification.read = true; 
+                if (notificationsPage.classList.contains('active')) renderNotifications();
+            }
+
+            switch(notification.type) {
+                case 'reminder':
+                case 'organizer':
+                    if (notification.data && notification.data.eventId) {
+                        showEventDetails(notification.data.eventId);
+                        if (notification.data.tab) {
+                            setTimeout(() => setActiveTab(notification.data.tab), 100);
+                        }
+                    }
+                    break;
+                case 'mention':
+                     if (notification.data && notification.data.eventId) {
+                        showEventDetails(notification.data.eventId);
+                         setTimeout(() => setActiveTab('eventFeedContentSection'), 100);
+                    }
+                    break;
+                case 'newMessage':
+                    if (notification.data && notification.data.userId) {
+                        navigateToPage('networkingPage', 'Networking');
+                        setTimeout(() => {
+                            const userToChat = mockGlobalUsers.find(u => u.id === notification.data.userId);
+                            if (userToChat) {
+                                openChatModal(userToChat.id);
+                            }
+                        }, 100);
+                    }
+                    break;
+                default:
+                    alert(`Notificação: ${notification.text}`);
+            }
+        }
+        
+        function formatDate(date) {
+            return `${date.toLocaleDateString('pt-BR')} às ${date.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}`;
+        }
+        
+        function loadProfileData() { 
+            viewProfileAvatar.src = userProfile.avatar || `https://placehold.co/100x100/007AFF/FFFFFF?text=${userProfile.name.substring(0,1)}`;
+            viewProfileName.textContent = userProfile.name;
+            viewProfileEmail.textContent = userProfile.email;
+            viewProfileBio.textContent = userProfile.bio || "Nenhuma bio informada.";
+            viewProfileJob.textContent = (userProfile.jobTitle && userProfile.company) ? `${userProfile.jobTitle} em ${userProfile.company}` : (userProfile.jobTitle || userProfile.company || "Não informado");
+            
+            viewProfileLinkedin.textContent = userProfile.linkedin ? "LinkedIn" : "LinkedIn (não informado)";
+            viewProfileLinkedin.href = userProfile.linkedin || "#";
+            if (!userProfile.linkedin) viewProfileLinkedin.classList.add('text-gray-400', 'pointer-events-none'); else viewProfileLinkedin.classList.remove('text-gray-400', 'pointer-events-none');
+
+            viewProfileInstagram.textContent = userProfile.instagram ? "Instagram" : "Instagram (não informado)";
+            viewProfileInstagram.href = userProfile.instagram || "#";
+             if (!userProfile.instagram) viewProfileInstagram.classList.add('text-gray-400', 'pointer-events-none'); else viewProfileInstagram.classList.remove('text-gray-400', 'pointer-events-none');
+
+            viewProfileX.textContent = userProfile.x ? "X (Twitter)" : "X (Twitter) (não informado)";
+            viewProfileX.href = userProfile.x || "#";
+            if (!userProfile.x) viewProfileX.classList.add('text-gray-400', 'pointer-events-none'); else viewProfileX.classList.remove('text-gray-400', 'pointer-events-none');
+
+            viewProfileWhatsapp.textContent = userProfile.whatsapp ? "WhatsApp" : "WhatsApp (não informado)";
+            viewProfileWhatsapp.href = userProfile.whatsapp || "#";
+            if (!userProfile.whatsapp) viewProfileWhatsapp.classList.add('text-gray-400', 'pointer-events-none'); else viewProfileWhatsapp.classList.remove('text-gray-400', 'pointer-events-none');
+        }
+
+        function loadEditProfileData() { 
+            editProfileAvatarPreview.src = userProfile.avatar || `https://placehold.co/100x100/007AFF/FFFFFF?text=${userProfile.name.substring(0,1)}`;
+            editProfileNameInput.value = userProfile.name;
+            editProfileBioTextarea.value = userProfile.bio;
+            editProfileJobInput.value = userProfile.jobTitle;
+            editProfileCompanyInput.value = userProfile.company;
+            editProfileAreaInput.value = userProfile.area;
+            editProfileLinkedinInput.value = userProfile.linkedin;
+            editProfileInstagramInput.value = userProfile.instagram;
+            editProfileXInput.value = userProfile.x;
+            editProfileWhatsappInput.value = userProfile.whatsapp;
+        }
+
+        function openSpeakerModal(speakerId, eventId) {
+            const event = mockEvents.find(e => e.id === parseInt(eventId));
+            if (!event) return;
+            const speaker = event.speakers.find(s => s.id === speakerId);
+            if (!speaker) return;
+
+            speakerModalAvatar.src = speaker.avatar || `https://placehold.co/100x100/cccccc/969696?text=${speaker.name.substring(0,1)}`;
+            speakerModalName.textContent = speaker.name;
+            speakerModalExpertise.textContent = speaker.expertise;
+            speakerModalBio.textContent = speaker.bio || "Nenhuma biografia disponível.";
+            speakerModalLectureTitle.textContent = speaker.lectureTitle || "Não especificado";
+            speakerModalLectureTime.textContent = speaker.lectureTime || "Não especificado";
+            
+            speakerModalRemindButton.onclick = () => {
+                addNotification(`Lembrete: ${speaker.lectureTitle} com ${speaker.name} (${event.title}) começa em breve.`, 'reminder', { eventId: event.id, tab: 'eventScheduleContent' });
+                alert(`Lembrete para a palestra de ${speaker.name} foi simuladamente criado!`);
+                closeModal(speakerModal);
+            };
+            speakerModal.classList.add('active');
+        }
+        
+        function openScheduleItemModal(eventId, scheduleItem) {
+            const event = mockEvents.find(e => e.id === parseInt(eventId));
+            if (!event || !scheduleItem) return;
+
+            scheduleItemModalTime.textContent = scheduleItem.time;
+            scheduleItemModalActivity.textContent = scheduleItem.activity;
+            scheduleItemModalDetails.innerHTML = `<p>${scheduleItem.details || "Mais detalhes sobre esta atividade estarão disponíveis em breve."}</p>`;
+            
+            if (scheduleItem.speakerId) {
+                const speaker = event.speakers.find(s => s.id === scheduleItem.speakerId);
+                if (speaker) {
+                    scheduleItemModalSpeakerAvatar.src = speaker.avatar || `https://placehold.co/100x100/cccccc/969696?text=${speaker.name.substring(0,1)}`;
+                    scheduleItemModalSpeakerName.textContent = speaker.name;
+                    scheduleItemModalSpeakerInfo.style.display = 'block';
+                } else {
+                    scheduleItemModalSpeakerInfo.style.display = 'none';
+                }
+            } else {
+                scheduleItemModalSpeakerInfo.style.display = 'none';
+            }
+
+            scheduleItemModalRemindButton.onclick = () => {
+                 addNotification(`Lembrete: Atividade "${scheduleItem.activity.substring(0,30)}..." (${event.title}) às ${scheduleItem.time}.`, 'reminder', { eventId: event.id, tab: 'eventScheduleContent' });
+                alert(`Lembrete para "${scheduleItem.activity.substring(0,30)}..." foi simuladamente criado!`);
+                closeModal(scheduleItemModal);
+            };
+
+            scheduleItemModal.classList.add('active');
+        }
+
+
+        function openNetworkUserModal(userId) {
+            const user = mockGlobalUsers.find(u => u.id === userId);
+            if (!user) return;
+
+            networkUserModalAvatar.src = user.avatar || `https://placehold.co/100x100/cccccc/969696?text=${user.name.substring(0,1)}`;
+            networkUserModalName.textContent = user.name;
+            networkUserModalCompany.textContent = user.company || 'Não informado';
+            networkUserModalBio.textContent = user.bio || 'Nenhuma biografia disponível.';
+            networkUserModalInterests.textContent = user.interests ? user.interests.join(', ') : 'Não informado';
+            
+            networkUserModalActions.innerHTML = ''; 
+            const connectButton = document.createElement('button');
+            connectButton.dataset.userId = user.id;
+            if (user.connected) {
+                connectButton.className = 'apple-button danger w-full mb-2 disconnect-user-btn-modal';
+                connectButton.textContent = 'Desconectar';
+            } else {
+                connectButton.className = 'apple-button w-full mb-2 connect-user-btn-modal';
+                connectButton.textContent = 'Conectar';
+            }
+            networkUserModalActions.appendChild(connectButton);
+
+            if (user.connected) {
+                const chatButton = document.createElement('button');
+                chatButton.className = 'apple-secondary-button w-full chat-user-btn-modal';
+                chatButton.textContent = 'Iniciar Chat';
+                chatButton.dataset.userId = user.id;
+                networkUserModalActions.appendChild(chatButton);
+            }
+            networkUserModal.classList.add('active');
+        }
+
+        function openChatModal(userId) {
+            const user = mockGlobalUsers.find(u => u.id === userId);
+            if (!user) return;
+            currentChatUserId = userId;
+            if (user.hasNewMessages) {
+                user.hasNewMessages = false;
+                const currentSearchTerm = networkSearchInput.value.toLowerCase();
+                const usersToDisplay = mockGlobalUsers.filter(u => 
+                    u.name.toLowerCase().includes(currentSearchTerm) || 
+                    (u.company && u.company.toLowerCase().includes(currentSearchTerm)) ||
+                    (u.interests && u.interests.some(interest => interest.toLowerCase().includes(currentSearchTerm)))
+                );
+                renderGlobalNetworkingList(usersToDisplay.length > 0 || !currentSearchTerm ? usersToDisplay : mockGlobalUsers);
+            }
+
+            chatModalUserAvatar.src = user.avatar || `https://placehold.co/80x80/cccccc/969696?text=${user.name.substring(0,1)}`;
+            chatModalUserName.textContent = user.name;
+            chatMessagesContainer.innerHTML = `<p class="text-xs text-center text-gray-500">Início do chat com ${user.name}. (Simulado)</p>`;
+            chatInput.value = '';
+            chatModal.classList.add('active');
+        }
+
+        function closeModal(modalElement) {
+            if (modalElement) modalElement.classList.remove('active');
+        }
+
+        eventDetailTabsContainer.addEventListener('click', (e) => {
+            if (e.target.matches('.event-tab-button')) setActiveTab(e.target.dataset.tab);
+        });
+
+        feedPostButton.addEventListener('click', () => {
+            const messageText = feedNewMessageText.value.trim();
+            const currentEventId = eventDetailCard.dataset.currentEventId;
+            if (messageText && currentEventId) {
+                const event = mockEvents.find(e => e.id === parseInt(currentEventId));
+                if (!event) return;
+                const newPostData = {
+                    userId: "currentUser", userName: userProfile.name + " (Você)", 
+                    avatar: userProfile.avatar, 
+                    timestamp: "Agora mesmo", text: messageText, image: null
+                };
+                if (!event.feedPosts) event.feedPosts = [];
+                event.feedPosts.unshift(newPostData);
+                renderFeed(event.feedPosts);
+                feedNewMessageText.value = '';
+                const firstPostElement = eventFeedContentContainer.firstChild;
+                if (firstPostElement) {
+                    firstPostElement.classList.add('animate-pulse');
+                    setTimeout(() => firstPostElement.classList.remove('animate-pulse'), 1000);
+                }
+            } else if (!messageText) {
+                alert("Por favor, escreva uma mensagem para postar.");
+            }
+        });
+
+        feedAttachPhotoButton.addEventListener('click', () => alert("Funcionalidade de anexar foto ainda não implementada."));
+
+        networkSearchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredUsers = mockGlobalUsers.filter(user => 
+                user.name.toLowerCase().includes(searchTerm) || 
+                (user.company && user.company.toLowerCase().includes(searchTerm)) ||
+                (user.interests && user.interests.some(interest => interest.toLowerCase().includes(searchTerm)))
+            );
+            renderGlobalNetworkingList(filteredUsers);
+        });
+
+        document.addEventListener('click', (e) => {
+            const target = e.target;
+            const userId = target.dataset.userId;
+
+            if (target.matches('.connect-user-btn, .connect-user-btn-modal')) {
+                const user = mockGlobalUsers.find(u => u.id === userId);
+                if (user) {
+                    user.connected = true;
+                    const currentSearchTerm = networkSearchInput.value.toLowerCase();
+                     const usersToDisplay = mockGlobalUsers.filter(u => 
+                        u.name.toLowerCase().includes(currentSearchTerm) || 
+                        (u.company && u.company.toLowerCase().includes(currentSearchTerm)) ||
+                        (u.interests && u.interests.some(interest => interest.toLowerCase().includes(currentSearchTerm)))
+                    );
+                    renderGlobalNetworkingList(usersToDisplay.length > 0 || !currentSearchTerm ? usersToDisplay : mockGlobalUsers);
+                    if (networkUserModal.classList.contains('active') && networkUserModalName.textContent === user.name) openNetworkUserModal(userId);
+                    alert(`Você agora está conectado com ${user.name}! (Simulado)`);
+                }
+            } else if (target.matches('.disconnect-user-btn, .disconnect-user-btn-modal')) {
+                 const user = mockGlobalUsers.find(u => u.id === userId);
+                if (user) {
+                    user.connected = false;
+                    user.hasNewMessages = false; 
+                    const currentSearchTerm = networkSearchInput.value.toLowerCase();
+                    const usersToDisplay = mockGlobalUsers.filter(u => 
+                        u.name.toLowerCase().includes(currentSearchTerm) || 
+                        (u.company && u.company.toLowerCase().includes(currentSearchTerm)) ||
+                        (u.interests && u.interests.some(interest => interest.toLowerCase().includes(currentSearchTerm)))
+                    );
+                    renderGlobalNetworkingList(usersToDisplay.length > 0 || !currentSearchTerm ? usersToDisplay : mockGlobalUsers);
+                    if (networkUserModal.classList.contains('active') && networkUserModalName.textContent === user.name) openNetworkUserModal(userId);
+                    alert(`Você se desconectou de ${user.name}. (Simulado)`);
+                }
+            } else if (target.matches('.chat-user-btn, .chat-user-btn-modal')) {
+                closeModal(networkUserModal); 
+                openChatModal(userId);
+            }
+        });
+        
+        sendChatMessageButton.addEventListener('click', () => {
+            const messageText = chatInput.value.trim();
+            if (messageText && currentChatUserId) {
+                const messageEl = document.createElement('div');
+                messageEl.className = 'chat-message sent';
+                messageEl.textContent = messageText;
+                chatMessagesContainer.appendChild(messageEl);
+                chatInput.value = '';
+                chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight; 
+
+                setTimeout(() => {
+                    const user = mockGlobalUsers.find(u => u.id === currentChatUserId);
+                    const replyEl = document.createElement('div');
+                    replyEl.className = 'chat-message received';
+                    replyEl.textContent = `Obrigado por sua mensagem! (Resposta de ${user ? user.name.split(' ')[0] : 'Usuário'} simulada)`;
+                    chatMessagesContainer.appendChild(replyEl);
+                    chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+                }, 1500);
+            }
+        });
+
+        speakerModalClose.addEventListener('click', () => closeModal(speakerModal));
+        scheduleItemModalClose.addEventListener('click', () => closeModal(scheduleItemModal));
+        networkUserModalClose.addEventListener('click', () => closeModal(networkUserModal));
+        chatModalClose.addEventListener('click', () => closeModal(chatModal));
+        window.addEventListener('click', (event) => { 
+            if (event.target === speakerModal) closeModal(speakerModal);
+            if (event.target === scheduleItemModal) closeModal(scheduleItemModal);
+            if (event.target === networkUserModal) closeModal(networkUserModal);
+            if (event.target === chatModal) closeModal(chatModal);
+        });
+
+        goToEditProfileButton.addEventListener('click', () => {
+            loadEditProfileData();
+            navigateToPage('editProfilePage', 'Editar Perfil');
+        });
+        
+        saveProfileButton.addEventListener('click', () => {
+            userProfile.name = editProfileNameInput.value;
+            userProfile.bio = editProfileBioTextarea.value;
+            userProfile.jobTitle = editProfileJobInput.value;
+            userProfile.company = editProfileCompanyInput.value;
+            userProfile.area = editProfileAreaInput.value;
+            userProfile.linkedin = editProfileLinkedinInput.value;
+            userProfile.instagram = editProfileInstagramInput.value;
+            userProfile.x = editProfileXInput.value;
+            userProfile.whatsapp = editProfileWhatsappInput.value;
+            
+            if (editProfileAvatarInput.files && editProfileAvatarInput.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    userProfile.avatar = e.target.result;
+                    editProfileAvatarPreview.src = e.target.result; 
+                    viewProfileAvatar.src = e.target.result; 
+                }
+                reader.readAsDataURL(editProfileAvatarInput.files[0]);
+            } else {
+                 editProfileAvatarPreview.src = userProfile.avatar; 
+            }
+
+            alert('Perfil salvo com sucesso! (Simulado)');
+            loadProfileData(); 
+            navigateToPage('profilePage', 'Perfil');
+        });
+        
+        editProfileAvatarInput.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    editProfileAvatarPreview.src = e.target.result;
+                }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+        cancelEditProfileButton.addEventListener('click', () => {
+            navigateToPage('profilePage', 'Perfil');
+        });
+
+        function navigateToPage(pageId, title) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active', 'fade-in'));
+            const targetPage = document.getElementById(pageId);
+            if (targetPage) {
+                targetPage.classList.add('active');
+                void targetPage.offsetWidth; 
+                targetPage.classList.add('fade-in');
+                if (pageId === 'networkingPage') {
+                    renderGlobalNetworkingList(mockGlobalUsers);
+                    networkSearchInput.value = '';
+                }
+                if (pageId === 'notificationsPage') {
+                    // Cria exemplos apenas se não houver notificações reais.
+                    if(notifications.filter(n => !n.isExample).length === 0) {
+                        // Limpa exemplos antigos para não duplicar se a página for visitada múltiplas vezes sem notifs reais
+                        notifications = notifications.filter(n => !n.isExample); 
+                        getSampleNotifications().forEach(sample => notifications.push(sample)); // Adiciona novos exemplos
+                    }
+                    renderNotifications(); 
+                }
+                if (pageId === 'profilePage') {
+                    loadProfileData();
+                }
+            }
+            pageTitleElement.textContent = title || "BuscaIA Eventos";
+            document.querySelectorAll('.bottom-nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.page === pageId) item.classList.add('active');
+            });
+            window.scrollTo(0, 0);
+        }
+
+        backButton.addEventListener('click', () => navigateToPage('eventListPage', 'BuscaIA Eventos'));
+        document.querySelectorAll('.bottom-nav-item').forEach(item => {
+            item.addEventListener('click', () => navigateToPage(item.dataset.page, item.dataset.title));
+        });
+        
+        renderEventList(); 
+    </script>
+</body>
+</html>
