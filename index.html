@@ -70,7 +70,7 @@
         }
         .bottom-nav-item svg { width: 24px; height: 24px; margin-bottom: 2px; }
         .bottom-nav-item.active { color: #007aff; }
-        .content-wrapper { padding-bottom: 80px; }
+        .content-wrapper { padding-bottom: 50px; /* Aumentado para melhor scroll */ }
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -201,12 +201,7 @@
         </div>
 
         <div id="eventDetailPage" class="page fade-in">
-            <button id="backButton" class="apple-secondary-button mb-6 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 mr-2"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" /></svg>
-                Voltar
-            </button>
-            <div id="eventDetailCard" class="apple-card p-6 non-interactive no-hover-effect">
-                <h2 id="detailEventTitle" class="text-3xl font-bold text-gray-900 mb-4"></h2>
+            <div id="eventDetailCard" class="apple-card p-6 non-interactive no-hover-effect mt-0"> <h2 id="detailEventTitle" class="text-3xl font-bold text-gray-900 mb-4"></h2>
                 <div class="event-detail-tabs" id="eventDetailTabsContainer">
                     <button class="event-tab-button active" data-tab="eventAboutContent">Sobre</button>
                     <button class="event-tab-button" data-tab="eventScheduleContent">Programação</button>
@@ -352,7 +347,7 @@
         </div>
         <div class="bottom-nav-item" data-page="networkingPage" data-title="Networking">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4.5 19.5a2.25 2.25 0 002.25 2.25h10.5a2.25 2.25 0 002.25-2.25V18.375m-15 0V18.375m0 0A2.25 2.25 0 014.5 16.125h15a2.25 2.25 0 012.25 2.25m0 0V19.5m0-1.125a2.25 2.25 0 00-2.25-2.25h-1.5M7.5 12.75a3.75 3.75 0 117.5 0 3.75 3.75 0 01-7.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
             </svg>
             Networking
         </div>
@@ -566,7 +561,7 @@
         const notificationsInfoText = document.getElementById('notificationsInfoText'); 
 
         const pageTitleElement = document.getElementById('pageTitle');
-        const backButton = document.getElementById('backButton');
+        // const backButton = document.getElementById('backButton'); // Removido
         const eventDetailCard = document.getElementById('eventDetailCard');
 
         const detailEventTitle = document.getElementById('detailEventTitle');
@@ -892,7 +887,7 @@
         }
 
         function addNotification(message, type = 'info', data = {}) {
-            notifications.unshift({ text: message, date: new Date(), type, data, read: false, isExample: false }); // Real notifications are not examples
+            notifications.unshift({ text: message, date: new Date(), type, data, read: false, isExample: false }); 
             notifications.sort((a,b) => b.date - a.date);
             if (notificationsPage.classList.contains('active')) { 
                  renderNotifications();
@@ -945,12 +940,11 @@
             notificationsToDisplay.sort((a,b) => b.date - a.date);
 
             if (notificationsToDisplay.length === 0) {
-                // Este caso só ocorreria se getSampleNotifications retornasse vazio, o que não deve acontecer.
-                // O texto informativo geral já está visível.
                 const noSpecificNotifs = document.createElement('p');
                 noSpecificNotifs.className = 'text-gray-500 text-center text-sm';
                 noSpecificNotifs.textContent = 'Nenhuma notificação no momento.';
                 notificationsList.appendChild(noSpecificNotifs);
+
             } else {
                 notificationsToDisplay.forEach(notif => {
                     const el = document.createElement('div');
@@ -969,7 +963,7 @@
 
 
         function handleNotificationClick(notification) {
-            if (!notification.isExample) { // Marcar como lida apenas se for real
+            if (!notification.isExample) { 
                 notification.read = true; 
                 if (notificationsPage.classList.contains('active')) renderNotifications();
             }
@@ -1328,11 +1322,9 @@
                     networkSearchInput.value = '';
                 }
                 if (pageId === 'notificationsPage') {
-                    // Cria exemplos apenas se não houver notificações reais.
                     if(notifications.filter(n => !n.isExample).length === 0) {
-                        // Limpa exemplos antigos para não duplicar se a página for visitada múltiplas vezes sem notifs reais
                         notifications = notifications.filter(n => !n.isExample); 
-                        getSampleNotifications().forEach(sample => notifications.push(sample)); // Adiciona novos exemplos
+                        getSampleNotifications().forEach(sample => notifications.push(sample)); 
                     }
                     renderNotifications(); 
                 }
@@ -1348,7 +1340,8 @@
             window.scrollTo(0, 0);
         }
 
-        backButton.addEventListener('click', () => navigateToPage('eventListPage', 'BuscaIA Eventos'));
+        // Removido o backButton daqui, pois ele não existe mais no HTML
+        // backButton.addEventListener('click', () => navigateToPage('eventListPage', 'BuscaIA Eventos')); 
         document.querySelectorAll('.bottom-nav-item').forEach(item => {
             item.addEventListener('click', () => navigateToPage(item.dataset.page, item.dataset.title));
         });
